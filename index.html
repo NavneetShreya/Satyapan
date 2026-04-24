@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Academic blockchain document verification with IPFS and Ethereum"
+    />
+    <title>DocuLedger | Academic Document Verification</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link href="./css/main.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="page-bg"></div>
+
+    <header class="hero">
+      <div class="hero__content">
+        <p class="tag">BLOCKCHAIN MINOR PROJECT</p>
+        <h1>Academic Document Verification Portal</h1>
+        <p class="subtitle">
+          Upload verified records to IPFS via Pinata and anchor hashes on-chain
+          using Ethereum smart contracts.
+        </p>
+
+        <div class="wallet-bar">
+          <button id="connectWalletBtn" class="btn btn--primary">
+            Connect MetaMask
+          </button>
+          <span id="walletAddress" class="wallet-address">Not connected</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="panel-grid">
+      <section class="panel" aria-labelledby="upload-panel-title">
+        <h2 id="upload-panel-title">Store New Document</h2>
+        <p class="panel-text">
+          Step 1 uploads your file to IPFS. Step 2 stores the returned CID in
+          your smart contract.
+        </p>
+
+        <label class="field-label" for="documentFile">Select document</label>
+        <input
+          id="documentFile"
+          type="file"
+          class="field-input"
+          accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+        />
+
+        <div class="button-row">
+          <button id="uploadToIpfsBtn" class="btn btn--accent">
+            Upload to Pinata
+          </button>
+          <button id="storeOnChainBtn" class="btn btn--primary" disabled>
+            Store CID On-Chain
+          </button>
+        </div>
+
+        <div class="result-box">
+          <p>Generated CID</p>
+          <code id="uploadedCid">No CID yet</code>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="verify-panel-title">
+        <h2 id="verify-panel-title">Verify Existing Document</h2>
+        <p class="panel-text">
+          Enter an IPFS CID and check whether it is already recorded by your
+          smart contract.
+        </p>
+
+        <label class="field-label" for="verifyCidInput">IPFS CID</label>
+        <input
+          id="verifyCidInput"
+          type="text"
+          class="field-input"
+          placeholder="bafybe..."
+        />
+
+        <div class="button-row">
+          <button id="verifyOnChainBtn" class="btn btn--primary">
+            Verify Document
+          </button>
+        </div>
+
+        <div class="result-box">
+          <p>Verification status</p>
+          <code id="verificationResult">Awaiting verification...</code>
+        </div>
+      </section>
+    </main>
+
+    <section class="status-strip" aria-live="polite">
+      <p id="appStatus">Ready. Connect wallet to begin.</p>
+    </section>
+
+    <footer>
+      <p>Developed by Group [INSERT NAME/NUMBER]</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+    <script src="./js/env.js"></script>
+    <script src="./js/App.js"></script>
+  </body>
+</html>
