@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Academic blockchain document verification with IPFS and Ethereum"
+      content="Blockchain document verification with IPFS and Ethereum"
     />
-    <title>DocuLedger | Academic Document Verification</title>
+    <title>Satyapan | Trust Ledger for Document Records</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,35 +18,50 @@
     <link href="./css/main.css" rel="stylesheet" />
   </head>
   <body>
-    <div class="page-bg"></div>
+    <div class="backdrop"></div>
 
-    <header class="hero">
-      <div class="hero__content">
-        <p class="tag">BLOCKCHAIN MINOR PROJECT</p>
-        <h1>Academic Document Verification Portal</h1>
-        <p class="subtitle">
-          Upload verified records to IPFS via Pinata and anchor hashes on-chain
-          using Ethereum smart contracts.
+    <header class="masthead">
+      <div class="masthead__left">
+        <p class="eyebrow">BLOCKCHAIN MINOR PROJECT</p>
+        <h1>SATYAPAN</h1>
+        <p class="lead">Trust Ledger for Academic Records</p>
+        <p class="sublead">
+          Verify certificates through a dual-proof model: decentralized file
+          storage on IPFS and immutable integrity mapping on blockchain.
         </p>
 
-        <div class="wallet-bar">
-          <button id="connectWalletBtn" class="btn btn--primary">
-            Connect MetaMask
+        <div class="wallet-ribbon">
+          <button id="connectWalletBtn" class="btn btn--ink">Connect MetaMask</button>
+          <span id="walletAddress" class="wallet-pill">Not connected</span>
+          <button id="themeToggleBtn" class="theme-toggle" type="button" aria-label="Toggle theme">
+            Night Mode
           </button>
-          <span id="walletAddress" class="wallet-address">Not connected</span>
         </div>
+      </div>
+
+      <div class="masthead__right">
+        <article class="metric-card">
+          <p class="metric-label">Integrity Layer</p>
+          <h3>Blockchain Anchor</h3>
+          <p>Each CID reference is written on-chain for tamper-evident proof.</p>
+        </article>
+        <article class="metric-card">
+          <p class="metric-label">Storage Layer</p>
+          <h3>IPFS via Pinata</h3>
+          <p>Content-addressed document retrieval without centralized lock-in.</p>
+        </article>
       </div>
     </header>
 
-    <main class="panel-grid">
-      <section class="panel" aria-labelledby="upload-panel-title">
+    <main class="workspace-grid">
+      <section class="workspace-card" aria-labelledby="upload-panel-title">
         <h2 id="upload-panel-title">Store New Document</h2>
-        <p class="panel-text">
-          Step 1 uploads your file to IPFS. Step 2 stores the returned CID in
-          your smart contract.
+        <p class="card-text">
+          Upload the selected file to IPFS first, then write the generated CID
+          into your deployed smart contract.
         </p>
 
-        <label class="field-label" for="documentFile">Select document</label>
+        <label class="field-label" for="documentFile">Document File</label>
         <input
           id="documentFile"
           type="file"
@@ -54,26 +69,22 @@
           accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
         />
 
-        <div class="button-row">
-          <button id="uploadToIpfsBtn" class="btn btn--accent">
-            Upload to Pinata
-          </button>
-          <button id="storeOnChainBtn" class="btn btn--primary" disabled>
-            Store CID On-Chain
-          </button>
+        <div class="action-row">
+          <button id="uploadToIpfsBtn" class="btn btn--gold">Upload to Pinata</button>
+          <button id="storeOnChainBtn" class="btn btn--ink" disabled>Store CID On-Chain</button>
         </div>
 
-        <div class="result-box">
+        <div class="result-panel">
           <p>Generated CID</p>
           <code id="uploadedCid">No CID yet</code>
         </div>
       </section>
 
-      <section class="panel" aria-labelledby="verify-panel-title">
+      <section class="workspace-card" aria-labelledby="verify-panel-title">
         <h2 id="verify-panel-title">Verify Existing Document</h2>
-        <p class="panel-text">
-          Enter an IPFS CID and check whether it is already recorded by your
-          smart contract.
+        <p class="card-text">
+          Enter any CID and validate whether it has already been registered in
+          the contract ledger.
         </p>
 
         <label class="field-label" for="verifyCidInput">IPFS CID</label>
@@ -84,25 +95,62 @@
           placeholder="bafybe..."
         />
 
-        <div class="button-row">
-          <button id="verifyOnChainBtn" class="btn btn--primary">
-            Verify Document
-          </button>
+        <div class="action-row">
+          <button id="verifyOnChainBtn" class="btn btn--ink">Verify Document</button>
         </div>
 
-        <div class="result-box">
+        <div class="result-panel">
           <p>Verification status</p>
           <code id="verificationResult">Awaiting verification...</code>
         </div>
       </section>
     </main>
 
+    <section class="flowline" aria-label="proof flow">
+      <article class="flow-step">
+        <span>01</span>
+        <h3>Pin the File</h3>
+        <p>Generate a deterministic CID using IPFS content addressing.</p>
+      </article>
+      <article class="flow-step">
+        <span>02</span>
+        <h3>Anchor the CID</h3>
+        <p>Submit transaction to record proof in blockchain state.</p>
+      </article>
+      <article class="flow-step">
+        <span>03</span>
+        <h3>Verify Anytime</h3>
+        <p>Use CID lookup to validate whether a document has trusted proof.</p>
+      </article>
+    </section>
+
+    <section class="usecases" aria-label="project use cases">
+      <div class="usecases__head">
+        <p class="eyebrow">APPLICATION AREAS</p>
+        <h2>Designed For Real Verification Workflows</h2>
+      </div>
+      <div class="usecases__grid">
+        <article class="usecase-card">
+          <h3>University Issuance</h3>
+          <p>Mark final-degree and transcript records as cryptographically verifiable proofs.</p>
+        </article>
+        <article class="usecase-card">
+          <h3>Recruiter Validation</h3>
+          <p>Check candidate credentials instantly without relying on email verification loops.</p>
+        </article>
+        <article class="usecase-card">
+          <h3>Inter-Institute Transfers</h3>
+          <p>Allow secure proof exchange between institutions with audit-friendly traceability.</p>
+        </article>
+      </div>
+    </section>
+
     <section class="status-strip" aria-live="polite">
       <p id="appStatus">Ready. Connect wallet to begin.</p>
     </section>
 
     <footer>
-      <p>Developed by Group [INSERT NAME/NUMBER]</p>
+      <p>Developed by Team Satyapan</p>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>

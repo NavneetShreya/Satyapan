@@ -21,6 +21,37 @@ const verifyOnChainBtn = document.getElementById("verifyOnChainBtn");
 const uploadedCidLabel = document.getElementById("uploadedCid");
 const verificationResultLabel = document.getElementById("verificationResult");
 const appStatus = document.getElementById("appStatus");
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+
+function applyTheme(theme) {
+  const selectedTheme = theme === "day" ? "day" : "night";
+  document.body.setAttribute("data-theme", selectedTheme);
+  localStorage.setItem("satyapan_theme", selectedTheme);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.textContent = selectedTheme === "day" ? "Night Mode" : "Day Mode";
+  }
+}
+
+function initializeTheme() {
+  const savedTheme = localStorage.getItem("satyapan_theme");
+  applyTheme(savedTheme || "night");
+}
+
+function hasFunction(signature) {
+  if (!contract?.interface) return false;
+
+  try {
+    contract.interface.getFunction(signature);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function cidToBytes32(ipfsHash) {
+  return ethers.keccak256(ethers.toUtf8Bytes(ipfsHash));
+}
 
 function truncateAddress(address) {
   if (!address || address.length < 10) return address;
@@ -44,6 +75,19 @@ function ensureEthereum() {
     setStatus("MetaMask not detected. Install MetaMask extension first.", "error");
     throw new Error("MetaMask is not installed");
   }
+}
+
+async function initializeReadOnlyContract() {
+  ensureContractConfigured();
+
+  if (window.ethereum) {
+    provider = new ethers.BrowserProvider(window.ethereum);
+  } else {
+    throw new Error("MetaMask not detected for contract provider.");
+  }
+
+  // Read-only mode: bind contract to provider so verify can work before wallet connect.
+  contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 }
 
 function ensureContractConfigured() {
@@ -72,7 +116,9 @@ async function connectWallet() {
     ensureEthereum();
     ensureContractConfigured();
 
-    provider = new ethers.BrowserProvider(window.ethereum);
+    if (!provider) {
+      provider = new ethers.BrowserProvider(window.ethereum);
+    }
     const accounts = await provider.send("eth_requestAccounts", []);
 
     if (!accounts || accounts.length === 0) {
@@ -84,6 +130,9 @@ async function connectWallet() {
     contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
     walletAddressLabel.textContent = truncateAddress(connectedAddress);
+    if (currentCid) {
+      storeOnChainBtn.disabled = false;
+    }
     setStatus("Wallet connected. You can now upload and verify documents.", "success");
   } catch (error) {
     if (error?.code === 4001) {
@@ -130,21 +179,57 @@ async function uploadToPinata(file) {
 }
 
 async function addDocumentOnChain(ipfsHash) {
-  if (!contract) {
-    throw new Error("Wallet not connected.");
+  if (!contract || !signer) {
+    throw new Error("Wallet not connected for write transaction.");
   }
 
-  const tx = await contract.addDocument(ipfsHash);
+  let tx;
+  if (hasFunction("addDocument(string)")) {
+    tx = await contract.addDocument(ipfsHash);
+  } else if (hasFunction("addDocHash(bytes32,string)")) {
+    const bytesHash = cidToBytes32(ipfsHash);
+    tx = await contract.addDocHash(bytesHash, ipfsHash);
+  } else {
+    throw new Error(
+      "Contract is missing supported add function. Expected addDocument(string) or addDocHash(bytes32,string)."
+    );
+  }
+
   setStatus("Transaction submitted. Waiting for confirmation...", "info");
   await tx.wait();
 }
 
 async function verifyDocumentOnChain(ipfsHash) {
   if (!contract) {
-    throw new Error("Wallet not connected.");
+    throw new Error("Contract not initialized.");
   }
 
-  return contract.verify(ipfsHash);
+  if (hasFunction("verify(string)")) {
+    const result = await contract.verify(ipfsHash);
+    return {
+      verified: Boolean(result),
+      mode: "verify(string)",
+    };
+  }
+
+  if (hasFunction("findDocHash(bytes32)")) {
+    const bytesHash = cidToBytes32(ipfsHash);
+    const result = await contract.findDocHash(bytesHash);
+
+    const blockNumber = Number(result?.[0] ?? 0);
+    const cidFromChain = result?.[3] ?? "";
+    const isVerified = blockNumber > 0 && cidFromChain === ipfsHash;
+
+    return {
+      verified: isVerified,
+      mode: "findDocHash(bytes32)",
+      details: result,
+    };
+  }
+
+  throw new Error(
+    "Contract is missing supported verify function. Expected verify(string) or findDocHash(bytes32)."
+  );
 }
 
 async function handleUploadToIpfs() {
@@ -158,7 +243,7 @@ async function handleUploadToIpfs() {
     setStatus("Uploading document to Pinata IPFS...", "info");
     currentCid = await uploadToPinata(selectedFile);
     uploadedCidLabel.textContent = currentCid;
-    storeOnChainBtn.disabled = false;
+    storeOnChainBtn.disabled = !connectedAddress;
     setStatus("Upload successful. CID generated and ready for blockchain storage.", "success");
   } catch (error) {
     setStatus(error.message || "Failed to upload document.", "error");
@@ -194,17 +279,10 @@ async function handleVerify() {
 
     setStatus("Checking verification status on-chain...", "info");
     const verifyResult = await verifyDocumentOnChain(ipfsHash);
-
-    if (typeof verifyResult === "boolean") {
-      verificationResultLabel.textContent = verifyResult
-        ? "Verified: Document exists on-chain."
-        : "Not verified: Document hash is not found.";
-      setStatus("Verification complete.", verifyResult ? "success" : "warning");
-      return;
-    }
-
-    verificationResultLabel.textContent = JSON.stringify(verifyResult);
-    setStatus("Verification complete. Returned non-boolean result from contract.", "success");
+    verificationResultLabel.textContent = verifyResult.verified
+      ? `Verified: Document exists on-chain (${verifyResult.mode}).`
+      : `Not verified: Document hash is not found (${verifyResult.mode}).`;
+    setStatus("Verification complete.", verifyResult.verified ? "success" : "warning");
   } catch (error) {
     verificationResultLabel.textContent = "Verification failed.";
 
@@ -223,13 +301,26 @@ function registerEvents() {
   storeOnChainBtn.addEventListener("click", handleStoreOnChain);
   verifyOnChainBtn.addEventListener("click", handleVerify);
 
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      const currentTheme = document.body.getAttribute("data-theme") || "night";
+      const nextTheme = currentTheme === "day" ? "night" : "day";
+      applyTheme(nextTheme);
+    });
+  }
+
   if (window.ethereum) {
     window.ethereum.on("accountsChanged", () => {
       connectedAddress = "";
-      contract = null;
+      signer = null;
       walletAddressLabel.textContent = "Not connected";
       storeOnChainBtn.disabled = true;
       setStatus("Account changed. Please reconnect wallet.", "warning");
+
+      // Keep read-only contract alive so verify remains available.
+      initializeReadOnlyContract().catch(() => {
+        contract = null;
+      });
     });
 
     window.ethereum.on("chainChanged", () => {
@@ -238,4 +329,28 @@ function registerEvents() {
   }
 }
 
+async function initializeApp() {
+  try {
+    ensureContractConfigured();
+    await initializeReadOnlyContract();
+
+    if (window.ethereum) {
+      const accounts = await provider.send("eth_accounts", []);
+      if (accounts && accounts.length > 0) {
+        signer = await provider.getSigner();
+        connectedAddress = accounts[0];
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        walletAddressLabel.textContent = truncateAddress(connectedAddress);
+        setStatus("Wallet detected. Ready for upload and verify.", "success");
+      } else {
+        setStatus("Ready. You can verify now. Connect wallet to store CID on-chain.", "info");
+      }
+    }
+  } catch (error) {
+    setStatus(error.message || "Failed to initialize app.", "error");
+  }
+}
+
+initializeTheme();
 registerEvents();
+initializeApp();
